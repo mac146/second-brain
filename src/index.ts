@@ -3,6 +3,7 @@ import { userModel,contentModel } from "./db.js";
 import jwt from "jsonwebtoken";
 import cors from "cors";
 import dotenv from "dotenv";
+import { userMiddleware } from "./middleware.js";
 dotenv.config();
 const Jwt_PASSWORD = process.env.JWT_PASSWORD!;
 
@@ -49,4 +50,42 @@ app.post ("/api/v1/signin",async (req,res)=>{
     }  
 })
 
-app.post("/api/v1/content",)
+app.post("/api/v1/content",userMiddleware,async(req,res)=>{
+    const {link,type,title}=req.body;
+
+    await contentModel.create({
+        link,
+        type,
+        title,
+        userId:req.userId
+    })
+    res.json({
+        message:"content created"
+    })
+})
+
+app.get("/api/v1/content",userMiddleware,async(req,res,next)=>{
+    const userId=req.userId;
+
+    const content=await contentModel.find({
+        userId
+    }).populate("userId","username")
+    res.json({
+        content
+    })
+})
+
+app.delete("/api/v1/content",userMiddleware,async(req,res,next)=>{
+    const contentId=req.body.contentId
+
+     await contentModel.deleteMany({
+        contentId,
+        userId: req.userId
+    })
+
+    res.json({
+        message: "Deleted"
+    })
+})
+
+app.listen(3000);
